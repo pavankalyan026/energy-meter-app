@@ -169,7 +169,7 @@ def save_reading():
     con.close()
 
     return f"""
-    <h3>✅ Daily Reading Saved</h3>
+    <h3>Daily Reading Saved</h3>"
     <p>Meter: {meter_id} | Consumption: {consumption}</p>
     <a href="/reading">Back to Entry</a> | <a href="/view">View Records</a>
     """
