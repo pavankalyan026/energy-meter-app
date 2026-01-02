@@ -7,7 +7,7 @@
 <body>
 
 <div class="container" style="max-width: 95%;">
-    <h2>📊 Energy Records</h2>
+    <h2>Energy Records</h2>
 
     <a href="/export">
         <button>⬇ Export to Excel</button>
@@ -36,10 +36,10 @@
             <td>{{ r[6] }}</td>
             <td>{{ r[7] }}</td>
             <td>
-                <a href="/uploads/{{ r[8].split('/')[-1] }}" target="_blank">📸</a>
+                <a href="/uploads/{{ r[8].split('/')[-1] }}" target="_blank"></a>
             </td>
             <td>
-                <a href="/delete/{{ r[0] }}">🗑</a>
+                <a href="/delete/{{ r[0] }}"></a>
             </td>
         </tr>
         {% endfor %}

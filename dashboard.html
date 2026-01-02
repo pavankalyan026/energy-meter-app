@@ -2,7 +2,7 @@
 <html>
 <body>
 
-<h2>📊 Energy Dashboard</h2>
+<h2>Energy Dashboard</h2>
 
 <p><b>Total Meters:</b> {{ total_meters }}</p>
 <p><b>Total Readings:</b> {{ total_readings }}</p>
@@ -31,9 +31,9 @@
     <td>{{ r[4] }}</td>
     <td>
     {% if r[6] == 1 %}
-        🔒 Locked
+        Locked
     {% else %}
-        ❌ Unlocked
+        Unlocked
     {% endif %}
     <td>
         {% if r[5] %}
