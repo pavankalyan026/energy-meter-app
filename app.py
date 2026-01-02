@@ -47,7 +47,7 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 import sqlite3
 
-DB_PATH = "energy.db"   # ✅ define database path
+DB_PATH = "energy.db"   # define database path
 
 def get_db():
     return sqlite3.connect(DB_PATH)
@@ -63,8 +63,8 @@ def init_db():
         )
     """)
 
-    con.commit()   # ✅ save changes
-    con.close()    # ✅ close connection
+    con.commit()   #  save changes
+    con.close()    #  close connection
     print("DB initialized")
 init_db()
 
