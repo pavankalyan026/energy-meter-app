@@ -6,6 +6,37 @@ from datetime import datetime
 from flask import Flask, render_template, request, Response, send_from_directory
 from PIL import Image
 import pytesseract
+import os
+import sqlite3
+
+# Define absolute paths for Render
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+DB_PATH = os.path.join(BASE_DIR, "energy.db")
+
+def get_db():
+    # check_same_thread=False is important for production web servers
+    return sqlite3.connect(DB_PATH, check_same_thread=False)
+
+# In your init_db function, ensure the 'readings' table is also created!
+def init_db():
+    con = get_db()
+    cur = con.cursor()
+    cur.execute("CREATE TABLE IF NOT EXISTS meters (meter_id TEXT PRIMARY KEY, location TEXT)")
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS readings (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            meter_id TEXT,
+            opening REAL,
+            closing REAL,
+            consumption REAL,
+            user TEXT,
+            date TEXT,
+            photo TEXT
+        )
+    """)
+    con.commit()
+    con.close()
+
 
 app = Flask(__name__)
 

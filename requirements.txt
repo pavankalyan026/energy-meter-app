@@ -1,4 +1,4 @@
 Flask
-pillow
-pytesseract
 gunicorn
+Pillow
+pytesseract
