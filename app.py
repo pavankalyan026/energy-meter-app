@@ -15,7 +15,7 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 # ---------- DATABASE ----------
 
 def get_db():
-    return sqlite3.connect("energy.db")
+    return sqlite3.connect(DB_PATH)
 
 def init_db():
     con = get_db()
@@ -41,7 +41,7 @@ def init_db():
     )
     con.commit()
     con.close()
-
+    print("DB initialized")
 init_db()
 
 # ---------- HELPERS ----------
@@ -75,29 +75,32 @@ def read_meter_from_image(image_path):
 @app.route("/", methods=["GET", "POST"])
 def meter_master():
     msg = ""
-    if request.method == "POST":
-        try:
+
+    try:
+        if request.method == "POST":
             meter_id = request.form["meter_id"]
             location = request.form["location"]
+
             con = get_db()
             cur = con.cursor()
-            # Only inserting 2 columns now
             cur.execute(
                 "INSERT INTO meters (meter_id, location) VALUES (?,?)",
                 (meter_id, location)
             )
             con.commit()
             con.close()
-            msg = "✅ Meter added successfully"
-        except:
-            msg = "❌ Meter already exists or data error"
+            msg = "Meter added successfully"
 
-    con = get_db()
-    cur = con.cursor()
-    cur.execute("SELECT * FROM meters")
-    meters = cur.fetchall()
-    con.close()
-    return render_template("meters.html", meters=meters, msg=msg)
+        con = get_db()
+        cur = con.cursor()
+        cur.execute("SELECT * FROM meters")
+        meters = cur.fetchall()
+        con.close()
+
+        return render_template("meters.html", meters=meters, msg=msg)
+
+    except Exception as e:
+        return f"<h3>Startup Error</h3><pre>{str(e)}</pre>"
 
 @app.route("/reading")
 def reading():
