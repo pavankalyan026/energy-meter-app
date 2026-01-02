@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meter Master</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        body { font-family: sans-serif; margin: 20px; background-color: #f4f4f4; }
+        .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        h2 { color: #333; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        form { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+        label { font-weight: bold; }
+        input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+        button { padding: 10px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background-color: #0056b3; }
+        .success { color: green; font-weight: bold; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background-color: #f8f9fa; }
+        .nav { margin-top: 20px; display: flex; gap: 15px; }
+        .nav a { text-decoration: none; color: #007bff; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Meter Master</h2>
+
+    <form method="POST">
+        <label for="meter_id">Meter ID</label>
+        <input type="text" id="meter_id" name="meter_id" placeholder="e.g. MTR-001" required>
+
+        <label for="location">Location</label>
+        <input type="text" id="location" name="location" placeholder="e.g. Ground Floor" required>
+
+        <button type="submit">Add Meter</button>
+    </form>
+
+    {% if msg %}
+    <p class="success">{{ msg }}</p>
+    {% endif %}
+
+    <table>
+        <thead>
+            <tr>
+                <th>Meter ID</th>
+                <th>Location</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for m in meters %}
+            <tr>
+                <td>{{ m[0] }}</td>
+                <td>{{ m[1] }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="nav">
+        <a href="/reading">Add Reading</a>
+        <a href="/view">View Records</a>
+    </div>
+</div>
+
+</body>
+</html>
