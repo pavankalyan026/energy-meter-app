@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>View Readings</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<div class="container" style="max-width: 95%;">
+    <h2>📊 Energy Records</h2>
+
+    <a href="/export">
+        <button>⬇ Export to Excel</button>
+    </a>
+
+    <table>
+        <tr>
+            <th>Meter</th>
+            <th>Location</th>
+            <th>Opening</th>
+            <th>Closing</th>
+            <th>Consumption</th>
+            <th>User</th>
+            <th>Date</th>
+            <th>Photo</th>
+            <th>Delete</th>
+        </tr>
+
+        {% for r in rows %}
+        <tr>
+            <td>{{ r[1] }}</td>
+            <td>{{ r[2] }}</td>
+            <td>{{ r[3] }}</td>
+            <td>{{ r[4] }}</td>
+            <td>{{ r[5] }}</td>
+            <td>{{ r[6] }}</td>
+            <td>{{ r[7] }}</td>
+            <td>
+                <a href="/uploads/{{ r[8].split('/')[-1] }}" target="_blank">📸</a>
+            </td>
+            <td>
+                <a href="/delete/{{ r[0] }}">🗑</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <div class="nav">
+        <a href="/">⬅ Meter Master</a>
+        <a href="/reading">➕ Add Reading</a>
+    </div>
+</div>
+
+</body>
+</html>
