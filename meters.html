@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Meter Master</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<div class="container">
+    <h2> Meter Master</h2>
+
+    <form method="POST">
+        <label>Meter ID</label>
+        <input name="meter_id" required>
+
+        <label>Location</label>
+        <input name="location" required>
+
+        <button>Add Meter</button>
+    </form>
+
+    <p class="success">{{ msg }}</p>
+
+    <table>
+        <tr>
+            <th>Meter</th>
+            <th>Location</th>
+        </tr>
+        {% for m in meters %}
+        <tr>
+            <td>{{ m[0] }}</td>
+            <td>{{ m[1] }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <div class="nav">
+        <a href="/reading">Add Reading</a>
+        <a href="/view">View Records</a>
+    </div>
+</div>
+
+</body>
+</html>
