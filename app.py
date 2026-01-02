@@ -1,55 +1,65 @@
 import os
-import re
 import sqlite3
-import csv
 from datetime import datetime
 from flask import Flask, render_template, request, Response, send_from_directory
-from PIL import Image
-import pytesseract
 
 app = Flask(__name__)
 
-# ---------- CONFIGURATION ----------
-# Use absolute paths for Render's environment
+# ---------- CONFIGURATION (RAILWAY SAFE) ----------
+import os
+
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-DB_PATH = os.path.join(BASE_DIR, "energy.db")
-UPLOAD_FOLDER = os.path.join(BASE_DIR, "uploads")
+
+# Detect Railway environment
+IS_RAILWAY = os.environ.get("RAILWAY_ENVIRONMENT") is not None
+
+if IS_RAILWAY:
+    DB_PATH = "/tmp/energy.db"
+    UPLOAD_FOLDER = "/tmp/uploads"
+else:
+    DB_PATH = os.path.join(BASE_DIR, "energy.db")
+    UPLOAD_FOLDER = os.path.join(BASE_DIR, "uploads")
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 # ---------- DATABASE ----------
 
 def get_db():
-    # check_same_thread=False is important for Gunicorn/Render
     return sqlite3.connect(DB_PATH, check_same_thread=False)
 
 def init_db():
-    con = get_db()
-    cur = con.cursor()
-    # Meter table
-    cur.execute(
-        "CREATE TABLE IF NOT EXISTS meters (meter_id TEXT PRIMARY KEY, location TEXT)"
-    )
-    # Readings table
-    cur.execute(
-        """
-        CREATE TABLE IF NOT EXISTS readings (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            meter_id TEXT,
-            opening REAL,
-            closing REAL,
-            consumption REAL,
-            user TEXT,
-            date TEXT,
-            photo TEXT
-        )
-        """
-    )
-    con.commit()
-    con.close()
-    print("Database initialized")
+    try:
+        con = get_db()
+        cur = con.cursor()
 
-# Run DB initialization
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS meters (
+                meter_id TEXT PRIMARY KEY,
+                location TEXT
+            )
+        """)
+
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS readings (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                meter_id TEXT,
+                opening REAL,
+                closing REAL,
+                consumption REAL,
+                user TEXT,
+                date TEXT,
+                photo TEXT
+            )
+        """)
+
+        con.commit()
+        con.close()
+        print("DB initialized")
+
+    except Exception as e:
+        print("DB INIT ERROR:", e)
+
+# Initialize DB safely
 init_db()
 
 # ---------- HELPERS ----------
@@ -70,32 +80,29 @@ def get_opening_reading(meter_id):
 @app.route("/", methods=["GET", "POST"])
 def meter_master():
     msg = ""
-    try:
-        if request.method == "POST":
-            meter_id = request.form["meter_id"]
-            location = request.form["location"]
 
+    if request.method == "POST":
+        meter_id = request.form.get("meter_id")
+        location = request.form.get("location")
+
+        if meter_id and location:
             con = get_db()
             cur = con.cursor()
             cur.execute(
-                "INSERT INTO meters (meter_id, location) VALUES (?,?)",
+                "INSERT OR IGNORE INTO meters VALUES (?,?)",
                 (meter_id, location)
             )
             con.commit()
             con.close()
             msg = "Meter added successfully"
 
-        con = get_db()
-        cur = con.cursor()
-        cur.execute("SELECT * FROM meters")
-        meters = cur.fetchall()
-        con.close()
+    con = get_db()
+    cur = con.cursor()
+    cur.execute("SELECT * FROM meters")
+    meters = cur.fetchall()
+    con.close()
 
-        return render_template("meters.html", meters=meters, msg=msg)
-
-    except Exception as e:
-        # Avoid emojis in error messages
-        return f"<h3>Startup Error</h3><pre>{str(e)}</pre>"
+    return render_template("meters.html", meters=meters, msg=msg)
 
 @app.route("/reading")
 def reading():
@@ -108,41 +115,45 @@ def reading():
 
 @app.route("/save_reading", methods=["POST"])
 def save_reading():
-    meter_id = request.form["meter_id"]
-    user = request.form["user"]
-    closing = float(request.form["current"])
+    meter_id = request.form.get("meter_id")
+    user = request.form.get("user")
+    closing = float(request.form.get("current"))
     photo = request.files.get("photo")
 
-    if photo is None or photo.filename == "":
+    if not photo or photo.filename == "":
         return "Error: Photo is mandatory"
 
     opening = get_opening_reading(meter_id)
     if closing < opening:
-        return "Error: Closing reading cannot be less than opening reading"
+        return "Error: Closing reading cannot be less than opening"
 
     consumption = closing - opening
+
     filename = f"{meter_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
     photo_path = os.path.join(UPLOAD_FOLDER, filename)
     photo.save(photo_path)
 
     con = get_db()
     cur = con.cursor()
-    cur.execute(
-        """
+    cur.execute("""
         INSERT INTO readings
         (meter_id, opening, closing, consumption, user, date, photo)
         VALUES (?,?,?,?,?,?,?)
-        """,
-        (meter_id, opening, closing, consumption, user,
-         datetime.now().strftime("%d-%m-%Y %H:%M"), photo_path)
-    )
+    """, (
+        meter_id,
+        opening,
+        closing,
+        consumption,
+        user,
+        datetime.now().strftime("%d-%m-%Y %H:%M"),
+        filename
+    ))
     con.commit()
     con.close()
 
-    return f"""
-    <h3>Daily Reading Saved</h3>
-    <p>Meter: {meter_id} | Consumption: {consumption}</p>
-    <a href="/reading">Back to Entry</a> | <a href="/view">View Records</a>
+    return """
+        <h3>Reading Saved</h3>
+        <a href="/reading">Back</a> | <a href="/view">View Records</a>
     """
 
 @app.route("/view")
@@ -150,7 +161,7 @@ def view_readings():
     con = get_db()
     cur = con.cursor()
     cur.execute("""
-        SELECT r.id, r.meter_id, m.location, r.opening, r.closing, 
+        SELECT r.id, r.meter_id, m.location, r.opening, r.closing,
                r.consumption, r.user, r.date, r.photo
         FROM readings r
         JOIN meters m ON r.meter_id = m.meter_id
@@ -165,7 +176,7 @@ def export():
     con = get_db()
     cur = con.cursor()
     cur.execute("""
-        SELECT r.meter_id, m.location, r.opening, r.closing, 
+        SELECT r.meter_id, m.location, r.opening, r.closing,
                r.consumption, r.user, r.date, r.photo
         FROM readings r
         JOIN meters m ON r.meter_id = m.meter_id
@@ -177,9 +188,7 @@ def export():
     def generate():
         yield "Meter ID,Location,Opening,Closing,Consumption,User,Date,Photo\n"
         for r in rows:
-            # Safely handle file paths for CSV
-            photo_name = os.path.basename(r[7]) if r[7] else ""
-            yield f"{r[0]},{r[1]},{r[2]},{r[3]},{r[4]},{r[5]},{r[6]},{photo_name}\n"
+            yield f"{r[0]},{r[1]},{r[2]},{r[3]},{r[4]},{r[5]},{r[6]},{r[7]}\n"
 
     return Response(
         generate(),
@@ -187,26 +196,11 @@ def export():
         headers={"Content-Disposition": "attachment; filename=energy_readings.csv"}
     )
 
-@app.route("/delete/<int:rid>")
-def delete_reading(rid):
-    admin_name = "Pavan" 
-    con = get_db()
-    cur = con.cursor()
-    cur.execute("SELECT user FROM readings WHERE id=?", (rid,))
-    row = cur.fetchone()
-
-    if not row or row[0] != admin_name:
-        return "Error: Not authorized"
-
-    cur.execute("DELETE FROM readings WHERE id=?", (rid,))
-    con.commit()
-    con.close()
-    return "Deleted successfully <br><a href='/view'>Back</a>"
-
 @app.route("/uploads/<path:filename>")
 def uploaded_file(filename):
     return send_from_directory(UPLOAD_FOLDER, filename)
 
+# ---------- START ----------
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port, debug=False)
+    app.run(host="0.0.0.0", port=port)
