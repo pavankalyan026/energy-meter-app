@@ -143,11 +143,11 @@ def save_reading():
     photo = request.files.get("photo")
 
     if photo is None or photo.filename == "":
-        return "❌ Photo is mandatory"
+        return "Photo is mandatory"
 
     opening = get_opening_reading(meter_id)
     if closing < opening:
-        return "❌ Closing reading cannot be less than opening reading"
+        return "Closing reading cannot be less than opening reading"
 
     consumption = closing - opening
     filename = f"{meter_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
@@ -225,12 +225,12 @@ def delete_reading(rid):
     row = cur.fetchone()
 
     if not row or row[0] != admin_name:
-        return "❌ Not authorized"
+        return "Not authorized"
 
     cur.execute("DELETE FROM readings WHERE id=?", (rid,))
     con.commit()
     con.close()
-    return "✅ Deleted <br><a href='/view'>Back</a>"
+    return " Deleted <br><a href='/view'>Back</a>"
 
 @app.route("/uploads/<path:filename>")
 def uploaded_file(filename):
